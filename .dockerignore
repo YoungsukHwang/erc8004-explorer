@@ -1,0 +1,17 @@
+.git
+.gitignore
+.claude/
+.streamlit/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Audio + transcripts + internal handoff doc — not needed at runtime
+*.mp3
+4dpL6vCtCMY.*
+lS5OXw1shWg.*
+rTvuVsNDWbI.*
+erc8004-explorer-handoff.md
+
+# OS junk
+.DS_Store

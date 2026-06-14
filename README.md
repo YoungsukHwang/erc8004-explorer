@@ -111,37 +111,133 @@ The first page load runs ~6 queries; subsequent loads hit the per-process
 cache (TTL 1 h). Total bytes scanned per page load is single-digit GB
 thanks to the partition cut.
 
+## Service account (shared by both deploy options)
+
+Both Streamlit Cloud and Cloud Run need a GCP service account that can
+read the BigQuery public dataset and bill query jobs to your project.
+
+### Create it with gcloud (one-liner version)
+
+```bash
+# Pick your project + a name for the service account
+PROJECT=project-cc7ed957-d1e3-4c3f-8b5
+SA_NAME=erc8004-explorer
+SA_EMAIL="${SA_NAME}@${PROJECT}.iam.gserviceaccount.com"
+
+# 1) Create the service account
+gcloud iam service-accounts create "$SA_NAME" \
+  --display-name="ERC-8004 Explorer (BigQuery reader)" \
+  --project="$PROJECT"
+
+# 2) Grant the two BigQuery roles it needs
+gcloud projects add-iam-policy-binding "$PROJECT" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/bigquery.dataViewer"
+
+gcloud projects add-iam-policy-binding "$PROJECT" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/bigquery.jobUser"
+```
+
+That's the entire setup. `dataViewer` lets it read tables; `jobUser`
+lets it run query jobs (the cost lands on your project — well inside
+the 1 TB / month free tier thanks to the partition cut).
+
+### Or via Console UI (if you prefer clicks)
+
+1. **IAM & Admin → Service Accounts → Create service account**
+   - Name: `erc8004-explorer`, click Create
+2. **Grant this service account access to project**
+   - Add role: `BigQuery Data Viewer`
+   - Add role: `BigQuery Job User`
+   - Click Done
+3. (Optional, only for Streamlit Cloud) **Click the SA → Keys tab →
+   Add Key → Create new key → JSON → Create**. A JSON file downloads.
+   Treat it like a password.
+
+### When do you need the JSON key file?
+
+| Deploy target | Need JSON key? | Why |
+|---|---|---|
+| Local dev (`gcloud auth application-default login`) | No | Uses your user ADC |
+| **Streamlit Community Cloud** | **Yes** | External host; needs SA creds in `st.secrets` |
+| **Google Cloud Run** | **No** | Attach the SA directly to the Cloud Run service |
+
 ## Deploy on Streamlit Community Cloud
 
-`bq.py` looks for `st.secrets["gcp_service_account"]` first and only falls
-back to ADC when it's missing — so the same code runs locally and on
-Streamlit Cloud without any branching at call sites.
-
-1. **Create a service account** in your GCP project (Console → IAM &
-   Admin → Service Accounts → New). No special scopes needed at creation
-   time.
-2. **Grant two roles** to that service account on the project:
-   - `BigQuery Data Viewer` (so it can read the public dataset)
-   - `BigQuery Job User` (so it can run queries — bills to your project)
-3. **Download a JSON key** (the service account → Keys → Add Key → JSON).
-4. **Connect the repo** at `share.streamlit.io` → "New app" → point at
-   `app/app.py`.
-5. **Paste the JSON key into Secrets** as a TOML block:
+1. **Create the SA + grab the JSON key** (see above).
+2. **`share.streamlit.io` → New app** → point at this repo, branch `main`,
+   main file path `app/app.py`.
+3. **Advanced settings → Secrets** → paste the JSON key as a TOML block:
    ```toml
    [gcp_service_account]
    type = "service_account"
    project_id = "your-project-id"
    private_key_id = "…"
    private_key = "-----BEGIN PRIVATE KEY-----\n…\n-----END PRIVATE KEY-----\n"
-   client_email = "your-sa@your-project.iam.gserviceaccount.com"
+   client_email = "erc8004-explorer@your-project.iam.gserviceaccount.com"
    client_id = "…"
    auth_uri = "https://accounts.google.com/o/oauth2/auth"
    token_uri = "https://oauth2.googleapis.com/token"
    auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
    client_x509_cert_url = "…"
    ```
-   Streamlit Cloud will redeploy automatically. The free tier is enough
-   for the dashboard's per-load scans.
+4. Save → the app deploys at `https://<name>.streamlit.app`. The free
+   tier is enough.
+
+`bq.py` reads `st.secrets["gcp_service_account"]` when it exists and
+falls back to ADC otherwise — same code on laptop, Streamlit Cloud, and
+Cloud Run.
+
+## Deploy on Google Cloud Run (recommended for the GCP track)
+
+Cloud Run lets you attach the service account directly, so no JSON key
+ever leaves the project.
+
+```bash
+PROJECT=project-cc7ed957-d1e3-4c3f-8b5
+REGION=us-central1                                   # same region as the dataset
+SA_EMAIL="erc8004-explorer@${PROJECT}.iam.gserviceaccount.com"
+
+# Enable the APIs (one-time)
+gcloud services enable run.googleapis.com \
+                       cloudbuild.googleapis.com \
+                       artifactregistry.googleapis.com \
+                       --project="$PROJECT"
+
+# Deploy straight from source — Cloud Build picks up the Dockerfile,
+# pushes the image to Artifact Registry, and rolls out the service.
+gcloud run deploy erc8004-explorer \
+  --source=. \
+  --region="$REGION" \
+  --project="$PROJECT" \
+  --service-account="$SA_EMAIL" \
+  --allow-unauthenticated \
+  --memory=1Gi \
+  --cpu=1 \
+  --min-instances=0 \
+  --max-instances=2
+```
+
+When the rollout finishes, gcloud prints the public URL
+(`https://erc8004-explorer-<hash>-<region>.a.run.app`). Visit it and
+you're live.
+
+Re-deploys are the same command — Cloud Build picks up code changes,
+rebuilds the image, and updates the running revision with zero
+downtime.
+
+### Why these flags?
+
+- `--service-account=$SA_EMAIL` — the running container assumes this
+  identity, so `google-cloud-bigquery` finds credentials via ADC
+  automatically. No JSON file on disk.
+- `--allow-unauthenticated` — anyone with the URL can view the
+  dashboard (this is the demo).
+- `--min-instances=0` — cold starts are fine for a demo and it costs
+  ~$0 idle.
+- `--max-instances=2` — caps the bill if the URL ever gets traffic.
+- `--memory=1Gi` — Streamlit + BigQuery client + pandas comfortably fits.
 
 ## The four views
 
