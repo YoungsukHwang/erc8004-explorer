@@ -301,6 +301,26 @@ No GCP credentials, no API key — uses a public Ethereum RPC
 `rpc.ankr.com`, and `eth.merkle.io` as fallbacks). Web3 v7+ ships an
 `ens` module out of the box.
 
+## What's next — extend to Base / L2
+
+This pipeline runs against Ethereum **mainnet**, which is where ERC-8004
+agents *plant their flag*. x402, though, is Base-native, and a lot of
+the cards in this dataset advertise multi-chain support. The natural
+next step is extending the same BigQuery + Streamlit + Vertex AI stack
+to Base — and then comparing the mainnet registry footprint against the
+chain where x402 actually settles. Adjacent directions worth pursuing:
+
+- An ENSIP-25 verifier — given a registered agent, check whether any
+  ENS name has set the `agent-registration[…]` text record vouching for
+  it. Today we only resolve owner reverse records; the spec lets us
+  close the loop the other way.
+- An off-chain fetcher for the 4,019 `https://` `agent_uri` entries
+  we currently report as a category but don't dereference. Cheap to
+  add and would turn external-host bot-farm hits into concrete card
+  contents.
+- Promoting the Trustworthy + Payable shortlist to a queryable API
+  that agent-discovery clients (or other dashboards) can call.
+
 ## What we did NOT build (deliberate)
 
 - **No risk model.** The pitch is *observation and exposure*, not

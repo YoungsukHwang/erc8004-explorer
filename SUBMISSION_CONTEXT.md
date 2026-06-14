@@ -232,8 +232,23 @@ feedbackURI hash`. The hash is the field we use for wash detection.
 
 ### Future
 
-Multi-select. Open to ESP / Compound Grants / Ethereum Support Program
+Multi-select — open to ESP / Compound Grants / Ethereum Support Program
 introductions.
+
+If the form has a free-text "what's next" field, paste this:
+
+> This pipeline currently reads Ethereum mainnet. x402 is Base-native
+> and most ERC-8004 agent cards advertise multi-chain support, so
+> mainnet looks like where agents *plant their flag* while real
+> activity probably concentrates on L2s — Base above all. The natural
+> next step is extending the same BigQuery + Streamlit + Vertex AI
+> stack to Base (and other L2s with public datasets), then comparing
+> registry footprint vs real activity across chains. Adjacent
+> directions: an ENSIP-25 verifier (check which on-chain agents have
+> an ENS name that vouches for them back), an off-chain HTTP fetcher
+> for the 4,019 https:// agent_uri entries we currently report as a
+> category but don't dereference, and turning the Trustworthy +
+> Payable shortlist into a queryable API for agent-discovery clients.
 
 ### Final checklist
 

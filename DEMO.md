@@ -98,7 +98,17 @@ screen.)*
 
 ---
 
-**[2:10 – 2:25]  Close**
+**[2:10 – 2:22]  Closing insight — mainnet vs L2**
+
+> "One thing worth flagging: this is Ethereum mainnet. x402 is
+> Base-native, and a lot of these cards advertise multi-chain support.
+> So mainnet is likely where agents plant their flag, while L2s — Base
+> especially — are where they actually work. Extending this same
+> pipeline there is the natural next step."
+
+---
+
+**[2:22 – 2:35]  Stack close**
 
 > "Under the hood, it's BigQuery for the data, Cloud Run for the app,
 > Vertex AI Gemini for natural-language search, and ENS for identity
