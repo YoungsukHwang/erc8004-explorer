@@ -11,6 +11,7 @@ import streamlit as st
 
 from bq import run_query
 import queries as q
+import nl_search
 
 
 st.set_page_config(
@@ -47,11 +48,13 @@ st.markdown(
 )
 
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "The Real Numbers",
     "Who's Behind It",
     "What Agents Actually Do",
     "Reputation, Real or Fake",
+    "🎯 Trustworthy + Payable",
+    "🔍 Find Agents",
     "📋 Cheat Sheet",
 ])
 
@@ -132,6 +135,28 @@ with tab1:
 
     st.subheader("Cumulative Registered")
     st.area_chart(df_q1.set_index("day")["cum_registered"], height=200)
+
+    st.subheader("Activity heatmap (day-of-week × hour UTC)")
+    with st.spinner("Loading heatmap..."):
+        df_hm = run_query(q.q_activity_heatmap())
+    day_order = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    pivot = (
+        df_hm.pivot(index="day_of_week", columns="hour_utc", values="n_registered")
+             .reindex(day_order)
+             .fillna(0)
+             .astype(int)
+    )
+    st.dataframe(
+        pivot.style.background_gradient(cmap="Reds", axis=None)
+              .format("{:,}"),
+        width="stretch",
+        height=290,
+    )
+    st.caption(
+        "Most-saturated cells = launch burst (Thu/Fri UTC on Jan 29-30). "
+        "The baseline noise concentrates in UTC business hours, consistent "
+        "with bot-farm operators running on a schedule."
+    )
 
     with st.expander("Raw daily counts"):
         st.dataframe(df_q1, width="stretch", hide_index=True)
@@ -539,9 +564,184 @@ with tab4:
 
 
 # =============================================================================
-# Tab 5 — 📋 Cheat Sheet (every headline number on one screen)
+# Tab 5 — 🎯 Trustworthy + Payable (the prize-statement view)
 # =============================================================================
 with tab5:
+    st.header("🎯 Trustworthy + Payable agents")
+    st.caption(
+        "The intersection of three filters: ≥ 3 unique reviewers, average score "
+        "≥ 80, and a card claiming x402 support. Each row is then enriched with "
+        "the owner's on-chain ERC-20 / USDC activity. Sorted so wallets that "
+        "actually received USDC float to the top."
+    )
+
+    s1, s2 = st.columns(2)
+    min_uc = s1.slider("Minimum unique reviewers", 1, 10, 3)
+    min_avg = s2.slider("Minimum average score", 0.0, 100.0, 80.0, step=5.0)
+
+    with st.spinner("Running the intersection query..."):
+        df_tp = run_query(q.q_trustworthy_payable(min_uc, min_avg))
+
+    n_match = len(df_tp)
+    n_received_usdc = int((df_tp["n_usdc_transfers"] > 0).sum())
+    n_received_erc20 = int((df_tp["n_erc20_transfers"] > 0).sum())
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Agents in intersection", f"{n_match:,}",
+              help="Out of 34,566 registered agents")
+    m2.metric("Owner received ERC-20", f"{n_received_erc20:,}")
+    m3.metric("Owner received USDC", f"{n_received_usdc:,}",
+              help="The strongest 'real economic activity' signal")
+    m4.metric("Survival rate", f"{n_match/34566*100:.3f}%",
+              help="Fraction of total Registered events that clear every bar")
+
+    st.dataframe(
+        df_tp,
+        width="stretch",
+        hide_index=True,
+        column_config={
+            "owner": st.column_config.TextColumn(width="small"),
+            "description": st.column_config.TextColumn(width="medium"),
+            "usdc_amount": st.column_config.NumberColumn(format="$%.2f"),
+        },
+    )
+
+    if n_match > 0:
+        top = df_tp.iloc[0]
+        if top["n_usdc_transfers"] > 0:
+            st.success(
+                f"**Top result:** `{top['name']}` (agent {int(top['agent_id'])}) — "
+                f"{int(top['unique_clients'])} reviewers, avg score {top['avg_score']}, "
+                f"and the owner received **${float(top['usdc_amount']):.2f}** in "
+                f"{int(top['n_usdc_transfers'])} USDC transfers."
+            )
+        else:
+            st.warning(
+                "Every intersection match claims x402 — but the top result still "
+                "hasn't received a single USDC transfer. The claim/reality gap "
+                "shows up even at the top of the leaderboard."
+            )
+    else:
+        st.info(
+            "No agents match the current sliders. Loosen `min_unique_clients` "
+            "or `min_avg_score` to widen the net."
+        )
+
+
+# =============================================================================
+# Tab 6 — 🔍 Find Agents (filter UI + NL search via Claude)
+# =============================================================================
+with tab6:
+    st.header("🔍 Find Agents")
+    st.caption(
+        "Free-text natural-language search (powered by Claude), or use the "
+        "structured filters below. Both end up calling the same SQL — "
+        "`q_agent_search()` in `queries.py`."
+    )
+
+    # ----- Natural-language box -----
+    nl_text = st.text_input(
+        "Natural-language search",
+        placeholder='e.g. "payable trading agents with at least 5 reviewers and high reputation"',
+        key="nl_query",
+    )
+
+    nl_filters: dict | None = None
+    if nl_text:
+        if not nl_search.available():
+            st.warning(
+                "Claude API key not configured. Add `[anthropic] api_key = \"sk-…\"` "
+                "to `.streamlit/secrets.toml` (or `ANTHROPIC_API_KEY` env var) to "
+                "enable natural-language search. Structured filters below still work."
+            )
+        else:
+            with st.spinner("Asking Claude to parse the request..."):
+                nl_filters = nl_search.parse_query(nl_text)
+            if nl_filters:
+                st.success(f"Parsed filters: `{nl_filters}`")
+            else:
+                st.error("Claude couldn't extract a filter — try rephrasing.")
+
+    st.divider()
+
+    # ----- Structured filters (always visible) -----
+    st.markdown("**Structured filters** (used directly, or pre-filled from NL result)")
+    nlf = nl_filters or {}
+
+    fc1, fc2, fc3 = st.columns(3)
+    agent_id_str = fc1.text_input(
+        "agent_id (exact)",
+        value=str(nlf.get("agent_id") or ""),
+        placeholder="e.g. 10307",
+    )
+    owner_str = fc2.text_input(
+        "owner address",
+        value=nlf.get("owner") or "",
+        placeholder="0x…",
+    )
+    name_contains = fc3.text_input(
+        "name contains",
+        value=nlf.get("name_contains") or "",
+        placeholder="e.g. trader",
+    )
+
+    fc4, fc5, fc6 = st.columns(3)
+    desc_contains = fc4.text_input(
+        "description contains",
+        value=nlf.get("description_contains") or "",
+    )
+    min_uc_s = fc5.number_input(
+        "min unique reviewers",
+        min_value=0,
+        max_value=50,
+        value=int(nlf.get("min_unique_clients") or 0),
+    )
+    min_score_s = fc6.number_input(
+        "min avg score",
+        min_value=0.0,
+        max_value=100.0,
+        value=float(nlf.get("min_avg_score") or 0.0),
+        step=5.0,
+    )
+
+    fc7, fc8 = st.columns(2)
+    x402_only = fc7.checkbox(
+        "x402=true only",
+        value=bool(nlf.get("x402_only", False)),
+    )
+    has_services_flag = fc8.checkbox(
+        "Has services[] endpoint",
+        value=bool(nlf.get("has_services", False)),
+    )
+
+    run = st.button("Search", type="primary")
+
+    if run or nl_filters:
+        kwargs = {
+            "agent_id": int(agent_id_str) if agent_id_str.strip() else None,
+            "owner": owner_str.strip() or None,
+            "name_contains": name_contains.strip() or None,
+            "description_contains": desc_contains.strip() or None,
+            "min_unique_clients": int(min_uc_s) if min_uc_s > 0 else None,
+            "min_avg_score": float(min_score_s) if min_score_s > 0 else None,
+            "x402_only": x402_only,
+            "has_services": has_services_flag,
+            "limit": int(nlf.get("limit", 50)),
+        }
+        with st.spinner("Querying BigQuery..."):
+            df_search = run_query(q.q_agent_search(**kwargs))
+
+        st.markdown(f"**{len(df_search)} result(s)**")
+        st.dataframe(df_search, width="stretch", hide_index=True, height=480)
+
+        if len(df_search) == 0:
+            st.info("No agents match these filters. Loosen the criteria.")
+
+
+# =============================================================================
+# Tab 7 — 📋 Cheat Sheet (every headline number on one screen)
+# =============================================================================
+with tab7:
     st.header("📋 Cheat Sheet — everything on one page")
     st.caption(
         "Every number here is also derived from one of the queries powering Tabs 1-4. "

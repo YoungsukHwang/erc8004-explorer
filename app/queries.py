@@ -225,6 +225,22 @@ def q_headline_kpis() -> str:
 # Q1 — Adoption: daily Registered count + cumulative
 # -----------------------------------------------------------------------------
 
+def q_activity_heatmap() -> str:
+    """day-of-week × hour-of-day grid of Registered events.
+    DAYOFWEEK is 1=Sunday..7=Saturday in BigQuery."""
+    return f"""
+    WITH {IDENTITY_BASE_CTE}
+    SELECT
+      EXTRACT(DAYOFWEEK FROM block_timestamp) AS dow_num,
+      FORMAT_TIMESTAMP('%a', block_timestamp) AS day_of_week,
+      EXTRACT(HOUR FROM block_timestamp) AS hour_utc,
+      COUNT(*) AS n_registered
+    FROM identity_base
+    GROUP BY dow_num, day_of_week, hour_utc
+    ORDER BY dow_num, hour_utc
+    """
+
+
 def q1_adoption_daily() -> str:
     return f"""
     WITH {IDENTITY_BASE_CTE},
@@ -550,6 +566,136 @@ def q_rated_x402_count() -> str:
 # -----------------------------------------------------------------------------
 # Owner deep-dive — what is inside one wallet's agent pool?
 # -----------------------------------------------------------------------------
+
+def q_agent_search(
+    agent_id: int | None = None,
+    owner: str | None = None,
+    name_contains: str | None = None,
+    description_contains: str | None = None,
+    min_unique_clients: int | None = None,
+    min_avg_score: float | None = None,
+    x402_only: bool = False,
+    has_services: bool = False,
+    limit: int = 100,
+) -> str:
+    """Free-form filter over inline cards joined with reputation aggregates.
+    Any param left as None / False is skipped."""
+    where = []
+    if agent_id is not None:
+        where.append(f"d.agent_id = {int(agent_id)}")
+    if owner:
+        where.append(f"d.owner = '{owner.lower()}'")
+    if name_contains:
+        safe = name_contains.replace("'", "")
+        where.append(f"LOWER(JSON_VALUE(d.card_json, '$.name')) LIKE '%{safe.lower()}%'")
+    if description_contains:
+        safe = description_contains.replace("'", "")
+        where.append(f"LOWER(JSON_VALUE(d.card_json, '$.description')) LIKE '%{safe.lower()}%'")
+    if x402_only:
+        where.append(f"{X402_VALUE_EXPR} = 'true'")
+    if has_services:
+        where.append("ARRAY_LENGTH(JSON_QUERY_ARRAY(d.card_json, '$.services')) > 0")
+    where_clause = " AND ".join(where) if where else "TRUE"
+
+    having = []
+    if min_unique_clients is not None:
+        having.append(f"COUNT(DISTINCT r.client) >= {int(min_unique_clients)}")
+    if min_avg_score is not None:
+        having.append(f"AVG(r.score) >= {float(min_avg_score)}")
+    having_clause = ("HAVING " + " AND ".join(having)) if having else ""
+
+    return f"""
+    WITH {DECODED_IDENTITY_CTE},
+    {REPUTATION_BASE_CTE}
+    SELECT
+      d.agent_id,
+      JSON_VALUE(d.card_json, '$.name') AS name,
+      SUBSTR(JSON_VALUE(d.card_json, '$.description'), 1, 100) AS description,
+      d.owner,
+      ARRAY_LENGTH(JSON_QUERY_ARRAY(d.card_json, '$.services')) AS n_services,
+      {X402_VALUE_EXPR} AS x402,
+      COUNT(r.score) AS n_feedbacks,
+      COUNT(DISTINCT r.client) AS unique_clients,
+      ROUND(AVG(r.score), 2) AS avg_score
+    FROM decoded d
+    LEFT JOIN reputation_base r ON r.agent_id = d.agent_id
+    WHERE {where_clause}
+    GROUP BY d.agent_id, d.card_json, d.owner
+    {having_clause}
+    ORDER BY avg_score DESC NULLS LAST, unique_clients DESC NULLS LAST
+    LIMIT {int(limit)}
+    """
+
+
+def q_trustworthy_payable(
+    min_unique_clients: int = 3,
+    min_avg_score: float = 80.0,
+) -> str:
+    """The one view that answers the prize statement directly:
+    'rank agents by feedback AND reputation, highlight x402, discover
+    trustworthy + payable.'
+
+    Intersection of:
+      - passes the Sybil bar (unique_clients >= 3)
+      - decent average score (>= 80)
+      - card claims x402Support = true
+      - owner has received at least one ERC-20 transfer (real economic activity)
+      - bonus: owner received USDC
+    """
+    return f"""
+    WITH {DECODED_IDENTITY_CTE},
+    {REPUTATION_BASE_CTE},
+    rep_summary AS (
+      SELECT
+        agent_id,
+        COUNT(*) AS n_feedbacks,
+        COUNT(DISTINCT client) AS unique_clients,
+        ROUND(AVG(score), 2) AS avg_score
+      FROM reputation_base
+      WHERE score IS NOT NULL
+      GROUP BY agent_id
+      HAVING COUNT(DISTINCT client) >= {min_unique_clients}
+         AND AVG(score) >= {min_avg_score}
+    ),
+    candidate AS (
+      SELECT
+        d.agent_id,
+        d.owner,
+        JSON_VALUE(d.card_json, '$.name') AS name,
+        SUBSTR(JSON_VALUE(d.card_json, '$.description'), 1, 80) AS description,
+        ARRAY_LENGTH(JSON_QUERY_ARRAY(d.card_json, '$.services')) AS n_services,
+        r.n_feedbacks, r.unique_clients, r.avg_score
+      FROM decoded d
+      JOIN rep_summary r USING (agent_id)
+      WHERE {X402_VALUE_EXPR} = 'true'
+    ),
+    owner_money AS (
+      SELECT
+        to_address AS owner,
+        COUNT(*) AS n_erc20_transfers,
+        COUNTIF(LOWER(address) = '{USDC_ADDRESS}') AS n_usdc_transfers,
+        SUM(IF(LOWER(address) = '{USDC_ADDRESS}',
+               SAFE_CAST(quantity AS NUMERIC) / 1e6, 0)) AS usdc_amount
+      FROM {TOKEN_TRANSFERS}
+      WHERE block_timestamp >= {PARTITION_CUT}
+        AND event_type = 'ERC-20'
+        AND to_address IN (SELECT DISTINCT owner FROM candidate)
+      GROUP BY owner
+    )
+    SELECT
+      c.agent_id, c.name, c.description, c.owner,
+      c.unique_clients, c.avg_score, c.n_feedbacks, c.n_services,
+      COALESCE(m.n_erc20_transfers, 0) AS n_erc20_transfers,
+      COALESCE(m.n_usdc_transfers, 0) AS n_usdc_transfers,
+      ROUND(COALESCE(m.usdc_amount, 0), 2) AS usdc_amount
+    FROM candidate c
+    LEFT JOIN owner_money m USING (owner)
+    ORDER BY
+      (CASE WHEN m.n_usdc_transfers > 0 THEN 1 ELSE 0 END) DESC,
+      c.avg_score DESC,
+      c.unique_clients DESC
+    """
+
 
 def q_owner_deep_dive(owner_address: str) -> str:
     """Scheme / x402 / feedback / nftOrigin distribution within one owner's
