@@ -140,20 +140,26 @@ with tab1:
     with st.spinner("Loading heatmap..."):
         df_hm = run_query(q.q_activity_heatmap())
     day_order = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    pivot = (
-        df_hm.pivot(index="day_of_week", columns="hour_utc", values="n_registered")
-             .reindex(day_order)
-             .fillna(0)
-             .astype(int)
+
+    import altair as alt
+    heat = (
+        alt.Chart(df_hm)
+        .mark_rect()
+        .encode(
+            x=alt.X("hour_utc:O", title="Hour (UTC)"),
+            y=alt.Y("day_of_week:N", title="Day", sort=day_order),
+            color=alt.Color(
+                "n_registered:Q",
+                title="Registrations",
+                scale=alt.Scale(scheme="reds"),
+            ),
+            tooltip=["day_of_week", "hour_utc", "n_registered"],
+        )
+        .properties(height=260)
     )
-    st.dataframe(
-        pivot.style.background_gradient(cmap="Reds", axis=None)
-              .format("{:,}"),
-        width="stretch",
-        height=290,
-    )
+    st.altair_chart(heat, use_container_width=True)
     st.caption(
-        "Most-saturated cells = launch burst (Thu/Fri UTC on Jan 29-30). "
+        "Darkest cells = launch burst (Thu/Fri UTC on Jan 29-30). "
         "The baseline noise concentrates in UTC business hours, consistent "
         "with bot-farm operators running on a schedule."
     )
