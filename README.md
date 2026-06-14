@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/cover.png" alt="ERC 8004 Reality Check — funnel: 34,569 → 9,520 → 4,645 → 216 → 6 → 2" width="780">
+</p>
+
 # ERC 8004 Reality Check
 
 **Target track:** GCP "Best On-Chain Agent Economy Application" — ETHGlobal NY 2026.
