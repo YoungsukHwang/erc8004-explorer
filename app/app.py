@@ -42,26 +42,57 @@ with st.sidebar:
     )
 
 
-st.title("ERC 8004 Reality Check")
-st.markdown(
+st.caption(
     "Four scanners brag about big registration counts. "
     "We open the boxes to show what's inside."
 )
 
 
 NAV_OPTIONS = [
-    "Funnel", "Owners", "Agents", "Reputation",
-    "Trust + Pay", "Search", "Summary",
+    "The Real Numbers",
+    "Who's Behind It",
+    "What Agents Actually Do",
+    "Reputation, Real or Fake",
+    "Trustworthy + Payable",
+    "Find Agents",
+    "Cheat Sheet",
 ]
 NAV_ICONS = [
-    "bar-chart-fill",   # Funnel
-    "people-fill",      # Owners
-    "robot",            # Agents
-    "star-fill",        # Reputation
-    "currency-dollar",  # Trust + Pay
-    "search",           # Search
-    "clipboard-data",   # Summary
+    "bar-chart-fill",
+    "people-fill",
+    "robot",
+    "star-fill",
+    "currency-dollar",
+    "search",
+    "clipboard-data",
 ]
+
+# Site-style top header — a thin border-bottom row containing brand + nav.
+st.markdown(
+    """
+    <style>
+      /* Pull the option-menu up so it reads like a navbar, not page content */
+      div[data-testid="stHorizontalBlock"] + div[data-testid="stElementContainer"]:has(nav) {
+        margin-top: -1rem;
+      }
+      .nav-brand {
+        font-weight: 700;
+        font-size: 18px;
+        padding: 8px 4px 2px 4px;
+        color: #FF4B4B;
+        letter-spacing: 0.2px;
+      }
+      .nav-brand small {
+        color: #888;
+        font-weight: 400;
+        font-size: 12px;
+        margin-left: 8px;
+      }
+    </style>
+    <div class="nav-brand">ERC&nbsp;8004 Reality Check<small>BigQuery&nbsp;·&nbsp;Cloud Run&nbsp;·&nbsp;Vertex AI</small></div>
+    """,
+    unsafe_allow_html=True,
+)
 
 selected = option_menu(
     menu_title=None,
@@ -71,19 +102,21 @@ selected = option_menu(
     default_index=0,
     styles={
         "container": {
-            "padding": "0!important",
+            "padding": "4px 0",
             "background-color": "transparent",
-            "margin-bottom": "8px",
+            "margin": "0 0 18px 0",
+            "border-bottom": "1px solid rgba(160,160,160,0.25)",
         },
-        "icon": {"color": "#FF8C42", "font-size": "16px"},
+        "icon": {"color": "#FF8C42", "font-size": "15px"},
         "nav-link": {
-            "font-size": "14px",
+            "font-size": "13.5px",
             "font-weight": "500",
             "text-align": "center",
-            "margin": "0 2px",
-            "padding": "10px 14px",
-            "--hover-color": "rgba(255, 75, 75, 0.10)",
-            "border-radius": "8px",
+            "margin": "0 1px",
+            "padding": "8px 12px",
+            "--hover-color": "rgba(255, 75, 75, 0.08)",
+            "border-radius": "6px",
+            "white-space": "nowrap",
         },
         "nav-link-selected": {
             "background-color": "#FF4B4B",
@@ -97,7 +130,7 @@ selected = option_menu(
 # =============================================================================
 # Tab 1 — The Real Numbers (Q1 Adoption + funnel)
 # =============================================================================
-if selected == "Funnel":
+if selected == "The Real Numbers":
     st.header("The Real Numbers")
     st.caption("Funnel: registered → has card → functional → rated → passes Sybil bar.")
 
@@ -202,7 +235,7 @@ if selected == "Funnel":
 # =============================================================================
 # Tab 2 — Who's Behind It (owner concentration + bot-farm hosts)
 # =============================================================================
-elif selected == "Owners":
+elif selected == "Who's Behind It":
     st.header("Who's Behind It")
     st.caption(
         "Pareto on owners + bot-farm fingerprint via external URI hosts. "
@@ -331,7 +364,7 @@ elif selected == "Owners":
 # =============================================================================
 # Tab 3 — What Agents Actually Do (live)
 # =============================================================================
-elif selected == "Agents":
+elif selected == "What Agents Actually Do":
     st.header("What Agents Actually Do")
     st.caption(
         "On-chain agent cards (base64-encoded inline JSON) decoded and classified. "
@@ -459,7 +492,7 @@ elif selected == "Agents":
 # =============================================================================
 # Tab 4 — Reputation, Real or Fake (Q3 + Q4)
 # =============================================================================
-elif selected == "Reputation":
+elif selected == "Reputation, Real or Fake":
     st.header("Reputation, Real or Fake")
     st.caption(
         "Q3 = the gist Sybil bar (unique_clients ≥ 3). "
@@ -622,7 +655,7 @@ elif selected == "Reputation":
 # =============================================================================
 # Tab 5 — 🎯 Trustworthy + Payable (the prize-statement view)
 # =============================================================================
-elif selected == "Trust + Pay":
+elif selected == "Trustworthy + Payable":
     st.header("🎯 Trustworthy + Payable agents")
     st.caption(
         "The intersection of three filters: ≥ 3 unique reviewers, average score "
@@ -687,7 +720,7 @@ elif selected == "Trust + Pay":
 # =============================================================================
 # Tab 6 — 🔍 Find Agents (filter UI + NL search via Claude)
 # =============================================================================
-elif selected == "Search":
+elif selected == "Find Agents":
     st.header("🔍 Find Agents")
     st.caption(
         "Free-text natural-language search (powered by Vertex AI Gemini), or "
@@ -804,7 +837,7 @@ elif selected == "Search":
 # =============================================================================
 # Tab 7 — 📋 Cheat Sheet (every headline number on one screen)
 # =============================================================================
-elif selected == "Summary":
+elif selected == "Cheat Sheet":
     st.header("📋 Cheat Sheet — everything on one page")
     st.caption(
         "Every number here is also derived from one of the queries powering Tabs 1-4. "
