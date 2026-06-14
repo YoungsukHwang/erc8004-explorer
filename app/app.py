@@ -149,60 +149,71 @@ if selected == "The Real Numbers":
     n_usdc = int(usdc.n_owners_received_usdc)
     usdc_amt = float(usdc.total_usdc_amount or 0)
 
-    # ---- Strict-subset funnel (each stage is genuinely a child of the previous one) ----
+    n_x402 = int(funnel.n_x402_claim)
+    n_trust = len(run_query(q.q_trustworthy_payable()))
+
+    # ---- Funnel: 5 strict-subset stages, all on the same agent-level universe ----
     st.markdown(
-        "**Funnel** — each stage is a *real subset* of the one before. "
-        "Registered ⊃ Has feedback ⊃ Passes Sybil. USDC is the owner-level "
-        "settlement check."
+        "**Funnel** — five strict-subset stages, agent-level. Each line "
+        "is genuinely a child set of the line above it: card-holders ⊂ "
+        "registered, x402-claimants ⊂ card-holders, rated ⊂ x402-claimants, "
+        "trustworthy+payable ⊂ rated."
     )
-    f1, f2, f3, f4 = st.columns(4)
+    f1, f2, f3, f4, f5 = st.columns(5)
     f1.metric("Registered", f"{n_reg:,}",
               help="All Identity Registered events since mainnet launch.")
-    f2.metric("Has any feedback", f"{n_rated:,}",
-              delta=f"{n_rated/n_reg*100:.2f}% of registered",
-              delta_color="off",
-              help="Distinct agents that received at least one NewFeedback event.")
-    f3.metric("Passes Sybil bar (≥3)", f"{n_sybil:,}",
-              delta=f"{n_sybil/n_reg*100:.3f}% of registered",
-              delta_color="off",
-              help="unique_clients ≥ 3 — the standard gist filter.")
-    f4.metric("Owner received USDC", f"{n_usdc:,}",
-              delta=f"${usdc_amt:,.0f} total",
-              delta_color="off",
-              help=f"x402=true owners that ever received a USDC transfer. "
-                   f"{int(usdc.total_usdc_transfers):,} transfers, "
-                   f"${usdc_amt:,.0f} aggregate.")
-
-    # ---- Parallel attributes across the same 34,569 universe ----
-    st.markdown(
-        "**Card attributes** — parallel breakdowns of what the registry "
-        "*says* agents are. These overlap with the funnel above (and with "
-        "each other) but are not a chain — e.g. 1,164 of the 1,652 rated "
-        "agents have no card at all."
-    )
-    a1, a2, a3, a4 = st.columns(4)
-    a1.metric("Has on-chain card", f"{n_card:,}",
+    f2.metric("Has on-chain card", f"{n_card:,}",
               delta=f"{n_card/n_reg*100:.1f}% of registered",
               delta_color="off",
               help="agent_uri = data:application/json;base64,…")
-    a2.metric("Claims x402 support", f"{int(funnel.n_x402_claim):,}",
-              delta=f"{funnel.n_x402_claim/n_card*100:.1f}% of cards",
+    f3.metric("Claims x402 support", f"{n_x402:,}",
+              delta=f"{n_x402/n_reg*100:.1f}% of registered",
               delta_color="off",
-              help="Self-reported in the card JSON — needs no code or service.")
+              help="Cards with x402Support = true.")
+    f4.metric("Rated AND claims x402", f"{rated_x402:,}",
+              delta=f"{rated_x402/n_reg*100:.2f}% of registered",
+              delta_color="off",
+              help="Inner join of x402=true cards with NewFeedback events.")
+    f5.metric("Trustworthy + Payable", f"{n_trust:,}",
+              delta=f"{n_trust/n_reg*100:.3f}% of registered",
+              delta_color="off",
+              help="Sybil pass (≥3 reviewers), avg_score ≥ 80, x402 claim — "
+                   "the shortlist in Tab 5.")
+
+    # ---- Activity-side metrics: same universe, different filters, NOT a chain ----
+    st.markdown(
+        "**Activity & settlement** — independent measurements over the same "
+        "registry, *not* a continuation of the funnel above. Sybil pass "
+        "(82 distinct owners) overlaps USDC receivers (32 wallets) by only 18 — "
+        "the two filters catch different agents."
+    )
+    a1, a2, a3, a4, a5 = st.columns(5)
+    a1.metric("Has any feedback", f"{n_rated:,}",
+              delta=f"{n_rated/n_reg*100:.2f}% of registered",
+              delta_color="off",
+              help="Distinct agents that received at least one NewFeedback event.")
+    a2.metric("Passes Sybil bar (≥3)", f"{n_sybil:,}",
+              delta=f"{n_sybil/n_reg*100:.3f}% of registered",
+              delta_color="off",
+              help="unique_clients ≥ 3 — the standard gist filter.")
     a3.metric("Has service endpoint", f"{int(funnel.n_functional):,}",
               delta=f"{funnel.n_functional/n_card*100:.2f}% of cards",
               delta_color="off",
-              help="services[] array non-empty.")
-    a4.metric("Rated AND claims x402", f"{rated_x402:,}",
-              delta="intersection",
+              help="services[] non-empty inside the card JSON.")
+    a4.metric("Owner received USDC", f"{n_usdc:,}",
+              delta=f"of {int(usdc.n_x402_true_owners):,} x402 owners",
               delta_color="off",
-              help="Cards claiming x402 that also got at least one feedback event.")
+              help="Owners of x402-claim cards that ever received a USDC "
+                   "transfer — the only fully on-chain settlement signal.")
+    a5.metric("USDC total received", f"${usdc_amt:,.0f}",
+              delta=f"{int(usdc.total_usdc_transfers):,} transfers",
+              delta_color="off",
+              help="Aggregated USDC quantity received by x402-claim owners.")
 
     st.markdown(
-        f"**Headline:** {n_reg:,} registrations on chain. "
-        f"**{n_usdc}** wallets ({n_usdc/n_reg*100:.2f}%) ever received a real "
-        f"USDC payment, **${usdc_amt:,.0f}** in aggregate. "
-        "Every step in the funnel narrows from claim to verifiable activity."
+        f"**Headline:** of {n_reg:,} registrations, only **{n_trust}** "
+        f"agents survive every filter in Tab 5. Separately, **{n_usdc} "
+        f"wallets** ever received USDC (**${usdc_amt:,.0f}** total)."
     )
 
     st.divider()
