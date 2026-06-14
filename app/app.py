@@ -150,7 +150,9 @@ if selected == "The Real Numbers":
     usdc_amt = float(usdc.total_usdc_amount or 0)
 
     n_x402 = int(funnel.n_x402_claim)
-    n_trust = len(run_query(q.q_trustworthy_payable()))
+    df_trust = run_query(q.q_trustworthy_payable())
+    n_trust = len(df_trust)
+    n_trust_paid = int((df_trust["n_usdc_transfers"] > 0).sum())
 
     # ---- Funnel: 5 strict-subset stages, all on the same agent-level universe ----
     st.markdown(
@@ -210,10 +212,19 @@ if selected == "The Real Numbers":
               delta_color="off",
               help="Aggregated USDC quantity received by x402-claim owners.")
 
+    # Funnel's final, strict child stage — settlement-verified survivors
+    paid_names = ", ".join(
+        f"{row['name']} (${float(row['usdc_amount']):,.2f})"
+        for _, row in df_trust[df_trust["n_usdc_transfers"] > 0].iterrows()
+    )
+    st.success(
+        f"**Final strict-subset stage:** of the {n_trust} Trustworthy + "
+        f"Payable agents, **{n_trust_paid} actually received USDC** — "
+        f"{paid_names}. That's the chain confirming what the registry claims."
+    )
     st.markdown(
-        f"**Headline:** of {n_reg:,} registrations, only **{n_trust}** "
-        f"agents survive every filter in Tab 5. Separately, **{n_usdc} "
-        f"wallets** ever received USDC (**${usdc_amt:,.0f}** total)."
+        f"**Headline:** of {n_reg:,} registrations, **{n_trust_paid}** "
+        f"agents survive every filter *and* show real on-chain settlement."
     )
 
     st.divider()
