@@ -251,6 +251,9 @@ downtime.
 > **Per-tab reading guide:** see [VIEWS.md](VIEWS.md) for a longer
 > explanation of every widget, the SQL behind each number, and how to
 > interpret what you're looking at.
+>
+> **Demo video script:** [DEMO.md](DEMO.md) — 90-second submission cut
+> + 30-second booth cut, with the lines to read on each tab.
 
 ## The four views
 

@@ -44,8 +44,9 @@ with st.sidebar:
 
 
 st.caption(
-    "Four scanners brag about big registration counts. "
-    "We open the boxes to show what's inside."
+    "What's inside the ERC-8004 registry — decoded from raw Ethereum "
+    "mainnet events. Identity, reputation, and payment, each claim "
+    "checked against on-chain bytes."
 )
 
 
@@ -108,7 +109,7 @@ selected = option_menu(
             "margin": "0 0 18px 0",
             "border-bottom": "1px solid rgba(160,160,160,0.25)",
         },
-        "icon": {"color": "#FF8C42", "font-size": "15px"},
+        "icon": {"color": "inherit", "font-size": "15px"},
         "nav-link": {
             "font-size": "13.5px",
             "font-weight": "500",
