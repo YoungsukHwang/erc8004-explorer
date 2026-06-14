@@ -274,6 +274,26 @@ downtime.
    drill-down expanders for score-outlier rows and perfect-100-only
    wallets.
 
+## ENS integration
+
+For the **Integrate ENS** pool prize. `app/ens_utils.py` does an ENS reverse
+lookup on every owner wallet shown in Tab 2 ("Who's Behind It") and Tab 5
+("Trustworthy + Payable"). Results are cached for 24 h per Streamlit
+instance.
+
+Why this matters for our narrative: the wallets responsible for the most
+ERC-8004 registrations are anonymous (no ENS reverse record set), while
+the small set of agents that pass the trustworthy + payable filter
+disproportionately belong to wallets that *have* set an ENS name —
+e.g. `kevinlilili.eth` (Surf), `ethyagent.eth` (Ethy AI),
+`jeffceo.eth` (Jeff Zyfai). ENS surfaces this gap directly in the table,
+no extra context required from the reader.
+
+No GCP credentials, no API key — uses a public Ethereum RPC
+(`ethereum-rpc.publicnode.com`, with `cloudflare-eth.com`,
+`rpc.ankr.com`, and `eth.merkle.io` as fallbacks). Web3 v7+ ships an
+`ens` module out of the box.
+
 ## What we did NOT build (deliberate)
 
 - **No risk model.** The pitch is *observation and exposure*, not

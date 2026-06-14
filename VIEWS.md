@@ -91,6 +91,10 @@ wallet operating many cards under one domain — but a host with high
 `n_owners` (`ag0.xyz`) is a multi-tenant platform, a different shape
 of phenomenon.
 
+The owner table's **ENS** column comes from a reverse lookup via
+`app/ens_utils.py`. A blank cell means the wallet has not set an ENS
+primary reverse record. The top registrants are mostly blank.
+
 ---
 
 ## Tab 3 — What Agents Actually Do

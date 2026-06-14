@@ -12,6 +12,7 @@ import streamlit as st
 from bq import run_query
 import queries as q
 import nl_search
+import ens_utils
 from streamlit_option_menu import option_menu
 
 
@@ -319,11 +320,22 @@ elif selected == "Who's Behind It":
     col_a, col_b = st.columns([3, 2])
     with col_a:
         st.subheader("Top 20 owners by registration count")
+        with st.spinner("Resolving ENS names for top owners..."):
+            ens_map = ens_utils.reverse_lookup_many(df_owners["owner"].tolist())
+        n_named = sum(1 for v in ens_map.values() if v)
+        st.caption(
+            f"**{n_named} of {len(df_owners)}** top-20 owners have set an ENS "
+            "primary name. The wallets responsible for the most registrations "
+            "tend not to."
+        )
+        owners_display = df_owners.assign(
+            ens=df_owners["owner"].map(ens_map).fillna("—"),
+            first_seen=df_owners["first_seen"].dt.strftime("%Y-%m-%d"),
+            last_seen=df_owners["last_seen"].dt.strftime("%Y-%m-%d"),
+        )[["owner", "ens", "n_registrations", "n_distinct_agents",
+           "first_seen", "last_seen"]]
         st.dataframe(
-            df_owners.assign(
-                first_seen=df_owners["first_seen"].dt.strftime("%Y-%m-%d"),
-                last_seen=df_owners["last_seen"].dt.strftime("%Y-%m-%d"),
-            ),
+            owners_display,
             width="stretch",
             hide_index=True,
             height=520,
@@ -684,16 +696,38 @@ elif selected == "Trustworthy + Payable":
     m4.metric("Survival rate", f"{n_match/34566*100:.3f}%",
               help="Fraction of total Registered events that clear every bar")
 
+    # Enrich with ENS reverse resolution — strong identity signal for the
+    # narrow trustworthy+payable set.
+    with st.spinner("Resolving ENS for owners in the shortlist..."):
+        tp_ens = ens_utils.reverse_lookup_many(df_tp["owner"].tolist())
+    df_tp_display = df_tp.copy()
+    df_tp_display["owner_ens"] = df_tp_display["owner"].map(tp_ens).fillna("—")
+    n_tp_ens = int((df_tp_display["owner_ens"] != "—").sum())
+
+    # Reorder columns: agent_id, name, owner_ens, owner, …rest
+    front = ["agent_id", "name", "owner_ens", "owner", "description"]
+    rest = [c for c in df_tp_display.columns if c not in front]
+    df_tp_display = df_tp_display[front + rest]
+
     st.dataframe(
-        df_tp,
+        df_tp_display,
         width="stretch",
         hide_index=True,
         column_config={
             "owner": st.column_config.TextColumn(width="small"),
+            "owner_ens": st.column_config.TextColumn("ENS", width="small",
+                help="ENS name set as the owner's primary reverse record."),
             "description": st.column_config.TextColumn(width="medium"),
             "usdc_amount": st.column_config.NumberColumn(format="$%.2f"),
         },
     )
+    if n_match > 0:
+        st.caption(
+            f"**{n_tp_ens} of {n_match}** trustworthy+payable agents have an "
+            "ENS-named owner — i.e. the wallet that registered them publicly "
+            "claims a human-readable identity. Compare with the top three "
+            "registration wallets (Tab 2), none of which have set one."
+        )
 
     if n_match > 0:
         top = df_tp.iloc[0]
@@ -885,6 +919,17 @@ elif selected == "Cheat Sheet":
                 delta=f"{int(conc.top10):,}", delta_color="off")
     o[3].metric("Top 20 share", f"{conc.top20 / n_reg * 100:.1f}%",
                 delta=f"{int(conc.top20):,}", delta_color="off")
+
+    # ENS-named ratio in the top-20 owners (Integrate ENS pool prize tie-in)
+    with st.spinner("Resolving ENS for top owners..."):
+        top_ens = ens_utils.reverse_lookup_many(
+            [r["owner"] for _, r in run_query(q.q_owner_top(20)).iterrows()]
+        )
+    n_top_ens = sum(1 for v in top_ens.values() if v)
+    st.caption(
+        f"ENS-named owners in the top 20: **{n_top_ens} / 20**. "
+        "The wallets responsible for the most registrations skew anonymous."
+    )
 
     st.subheader("Bot-farm hosts (top external URI domains)")
     h = st.columns(min(5, len(hosts)))
