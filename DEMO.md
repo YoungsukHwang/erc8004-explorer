@@ -9,7 +9,111 @@ is the Cloud Run deployment (`https://erc8004-reality-check-…-uc.a.run.app`).
 
 ---
 
-## 90-second cut (submission)
+## 2-minute cut (ETHGlobal submission — required 2-4 min)
+
+This is the version that goes into the submission form's "Video Upload"
+slot. Times below assume the screen is mirroring the live Cloud Run
+deployment (`https://erc8004-reality-check-…-uc.a.run.app`).
+
+**[0:00 – 0:12]  Open on the brand row at the top of the page**
+
+> "ERC-8004 is Ethereum's new on-chain identity, reputation, and payment
+> registry for AI agents. On mainnet it has **34,569 registrations**
+> today, and four scanners are already racing to count them. We built
+> something different: a dashboard that reads those registrations
+> straight from BigQuery and shows what's *actually* behind the number."
+
+---
+
+**[0:12 – 0:30]  Tab 1 — The Real Numbers**
+
+> "Each line in this funnel is a *real subset* of the line above it.
+> Of the 34,569 registrations, only **9,520 carry an inline on-chain
+> card**. Only **4,645** of those claim x402 payment support. Only
+> **216** of those have ever received a feedback event. Only **six**
+> survive all three filters plus the gist Sybil bar. And finally —
+> **only two of those six wallets ever received a real USDC payment**.
+> Three hundred twenty thousand dollars total, but a 99.99 percent gap
+> between claim and reality."
+
+*(Land on the green success callout below the funnel.)*
+
+---
+
+**[0:30 – 0:52]  Click "Who's Behind It"**
+
+> "The top wallet alone registered **9,967 agents** — 29 percent of the
+> whole registry. Every single one has an empty agent_uri. No card, no
+> service, no x402, no nftOrigin. The top three wallets together cover
+> over a third of the registry, and **none** of them have set an ENS
+> name."
+
+*(Open the top-wallet drill-down expander, point at the empty rows.)*
+
+> "External hosts tell the same story. `api.normies.art` —
+> **1,171 registrations, exactly one owner**. That's the bot-farm
+> fingerprint. `ag0.xyz` has 1,985 registrations but **438 distinct
+> owners** — a real platform, different shape."
+
+---
+
+**[0:52 – 1:10]  Click "What Agents Actually Do"**
+
+> "Inside the 9,520 cards: only **224 have a real service endpoint** —
+> two percent. **4,645 claim x402 payment support**, but when we
+> JOIN `token_transfers` to check, **only 32 owners ever received any
+> USDC**. The claim was set with one line of JSON; the reality
+> required on-chain settlement."
+
+*(Hover the x402 claim-vs-reality KPIs.)*
+
+---
+
+**[1:10 – 1:30]  Click "Reputation, Real or Fake"**
+
+> "Even the 105 agents that pass the standard Sybil bar are not safe.
+> 3,173 feedback events share only **183 distinct feedbackURI hashes** —
+> seventeen times reuse on average. One hash, `0xc5d246…`, appears
+> **386 times from 301 different wallets** targeting just 39 agents.
+> That's a coordinated Sybil campaign disguised as 301 independent
+> voices — exactly what the standard filter cannot catch."
+
+---
+
+**[1:30 – 1:50]  Click "Trustworthy + Payable"**
+
+> "Here's the shortlist the GCP prize statement asks for. Sybil bar,
+> minimum reputation, x402 claim, and real on-chain USDC settlement —
+> the entire registry collapses to **six agents**. Two actually got
+> paid: **Surf, owned by `kevinlilili.eth`**, and **Ethy AI, owned by
+> `ethyagent.eth`**. Both are ENS-named wallets. The pattern is
+> impossible to miss: the registry's biggest farms are anonymous, the
+> real ones aren't."
+
+*(Highlight the `owner_ens` column.)*
+
+---
+
+**[1:50 – 2:05]  Click "Find Agents", type the example**
+
+> "And finally — natural-language search, powered by Vertex AI Gemini.
+> 'Agents with at least 5 reviews and high reputation.' Gemini parses
+> it into structured filters, BigQuery returns the result. No API key,
+> no secret file — the **same service account** that reads BigQuery
+> calls Gemini and resolves ENS."
+
+*(Press Enter, let the results render.)*
+
+---
+
+**[2:05 – 2:15]  Close**
+
+> "BigQuery, Cloud Run, Vertex AI Gemini, ENS — all on one GCP service
+> account. Open source. Repo and live demo linked below."
+
+---
+
+## 90-second cut (booth + backup)
 
 Read the times as "by this point you should be on this screen." Words in
 **bold** are the ones to land on; everything else is connective tissue.
@@ -115,6 +219,32 @@ For walking judges through the headline in one breath.
 > Open source, live demo linked."
 
 ---
+
+## Final checklist (run through 30 min before recording)
+
+1. **Cloud Run redeploy** — make sure the live URL serves the latest
+   commit. From the repo root:
+   ```bash
+   gcloud run deploy erc8004-reality-check \
+     --source=. --region=us-central1 --project="$PROJECT" \
+     --service-account="$NEW_SA_EMAIL" --allow-unauthenticated \
+     --memory=1Gi --cpu=1 --min-instances=0 --max-instances=2
+   ```
+   Wait for "Service URL" in the output before recording.
+2. **Open the live URL in a clean browser window** — incognito if your
+   normal window has extensions or login prompts that might pop in.
+3. **Pre-warm the cache** — click through every tab once so subsequent
+   loads are instant; the recording shouldn't include a 5-second
+   spinner.
+4. **Theme = Light** (Streamlit `⋮` → Settings → Light) — the red
+   primary color reads cleanly against white.
+5. **Window size = 1280×800** so the seven nav links sit on a single
+   row and screenshot proportions match GitHub previews.
+6. **Mic check** — 10-second test, listen back, adjust input gain.
+7. **Close any apps that play notification sounds** (Slack, Mail,
+   iMessage). Set Mac to Do Not Disturb.
+8. **Practice once silently** (mouse moves only), then once with audio,
+   then record the take. Three takes is plenty.
 
 ## Recording tips
 
