@@ -34,7 +34,7 @@ DECODED_IDENTITY_CTE = f"""
 {IDENTITY_BASE_CTE},
 decoded AS (
   SELECT
-    agent_id, owner, agent_uri,
+    block_timestamp, agent_id, owner, agent_uri,
     CASE
       WHEN STARTS_WITH(agent_uri, 'data:application/json;base64,')
         THEN {INLINE_JSON_EXPR}
@@ -519,6 +519,72 @@ def q_x402_claim_vs_reality() -> str:
       SUM(n_usdc) AS total_usdc_transfers,
       ROUND(SUM(usdc_amount), 2) AS total_usdc_amount
     FROM received
+    """
+
+
+# -----------------------------------------------------------------------------
+# Rated + x402 — agents that received feedback AND claim x402 support
+# (the missing funnel stage between "claims x402" and "received USDC")
+# -----------------------------------------------------------------------------
+
+def q_rated_x402_count() -> str:
+    """Distinct agents that (a) received at least one NewFeedback event AND
+    (b) carry an inline card with x402Support=true. The handoff §B Q4
+    inner-join shape — matches the user's GIST."""
+    return f"""
+    WITH {DECODED_IDENTITY_CTE},
+    rated_agents AS (
+      SELECT DISTINCT SAFE_CAST(topics[SAFE_OFFSET(1)] AS INT64) AS agent_id
+      FROM {LOGS}
+      WHERE address = '{REPUTATION_REGISTRY}'
+        AND topics[SAFE_OFFSET(0)] = '{SIG_NEW_FEEDBACK}'
+        AND block_timestamp >= {PARTITION_CUT}
+    )
+    SELECT COUNT(DISTINCT d.agent_id) AS n_rated_x402
+    FROM decoded d
+    WHERE {X402_VALUE_EXPR} = 'true'
+      AND d.agent_id IN (SELECT agent_id FROM rated_agents)
+    """
+
+
+# -----------------------------------------------------------------------------
+# Owner deep-dive — what is inside one wallet's agent pool?
+# -----------------------------------------------------------------------------
+
+def q_owner_deep_dive(owner_address: str) -> str:
+    """Scheme / x402 / feedback / nftOrigin distribution within one owner's
+    registered agents. Designed for the top-1 wallet (0xd5d6d96…) which
+    alone owns 9,967 agents."""
+    owner = owner_address.lower()
+    return f"""
+    WITH {DECODED_IDENTITY_CTE},
+    owned AS (
+      SELECT * FROM decoded WHERE owner = '{owner}'
+    ),
+    rated AS (
+      SELECT DISTINCT SAFE_CAST(topics[SAFE_OFFSET(1)] AS INT64) AS agent_id
+      FROM {LOGS}
+      WHERE address = '{REPUTATION_REGISTRY}'
+        AND topics[SAFE_OFFSET(0)] = '{SIG_NEW_FEEDBACK}'
+        AND block_timestamp >= {PARTITION_CUT}
+        AND SAFE_CAST(topics[SAFE_OFFSET(1)] AS INT64) IN (
+          SELECT agent_id FROM owned
+        )
+    )
+    SELECT
+      COUNT(*) AS n_agents,
+      COUNTIF(agent_uri IS NULL OR agent_uri = '') AS n_no_uri,
+      COUNTIF(STARTS_WITH(agent_uri, 'data:application/json;base64,')) AS n_inline_base64,
+      COUNTIF(STARTS_WITH(agent_uri, 'https://') OR STARTS_WITH(agent_uri, 'http://')) AS n_http,
+      COUNTIF(STARTS_WITH(agent_uri, 'ipfs://')) AS n_ipfs,
+      COUNTIF(card_json IS NOT NULL) AS n_has_card,
+      COUNTIF({X402_VALUE_EXPR} = 'true') AS n_x402_true,
+      COUNTIF(ARRAY_LENGTH(JSON_QUERY_ARRAY(card_json, '$.services')) > 0) AS n_functional,
+      COUNTIF(JSON_VALUE(card_json, '$.nftOrigin.contract') IS NOT NULL) AS n_nft_origin,
+      (SELECT COUNT(*) FROM rated) AS n_rated_in_owner,
+      MIN(block_timestamp) AS first_registration,
+      MAX(block_timestamp) AS last_registration
+    FROM owned
     """
 
 

@@ -47,11 +47,12 @@ st.markdown(
 )
 
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "The Real Numbers",
     "Who's Behind It",
     "What Agents Actually Do",
     "Reputation, Real or Fake",
+    "📋 Cheat Sheet",
 ])
 
 
@@ -62,32 +63,47 @@ with tab1:
     st.header("The Real Numbers")
     st.caption("Funnel: registered → has card → functional → rated → passes Sybil bar.")
 
-    # ---- Funnel headline row ----
+    # ---- Funnel headline rows ----
     with st.spinner("Loading funnel..."):
         funnel = run_query(q.q_funnel()).iloc[0]
+        rated_x402 = int(run_query(q.q_rated_x402_count()).iloc[0]["n_rated_x402"])
+        usdc = run_query(q.q_x402_claim_vs_reality()).iloc[0]
 
     n_reg = int(funnel.n_registered)
-    f1, f2, f3, f4, f5, f6 = st.columns(6)
+    n_usdc = int(usdc.n_owners_received_usdc)
+
+    st.markdown("**Identity side** — what does the registry say agents are?")
+    f1, f2, f3, f4 = st.columns(4)
     f1.metric("Registered", f"{n_reg:,}",
               help="All Identity Registered events since mainnet launch")
     f2.metric("Has on-chain card", f"{int(funnel.n_inline_json):,}",
               delta=f"{funnel.n_inline_json/n_reg*100:.1f}%", delta_color="off")
-    f3.metric("Functional (has endpoint)", f"{int(funnel.n_functional):,}",
-              delta=f"{funnel.n_functional/n_reg*100:.2f}%", delta_color="off")
-    f4.metric("Has any feedback", f"{int(funnel.n_agents_rated):,}",
+    f3.metric("Functional (endpoint)", f"{int(funnel.n_functional):,}",
+              delta=f"{funnel.n_functional/n_reg*100:.2f}%", delta_color="off",
+              help="services[] array non-empty")
+    f4.metric("Claims x402", f"{int(funnel.n_x402_claim):,}",
+              delta=f"{funnel.n_x402_claim/n_reg*100:.1f}%", delta_color="off",
+              help="x402Support == true on the card")
+
+    st.markdown("**Reality side** — what does on-chain activity confirm?")
+    r1, r2, r3, r4 = st.columns(4)
+    r1.metric("Has any feedback", f"{int(funnel.n_agents_rated):,}",
               delta=f"{funnel.n_agents_rated/n_reg*100:.1f}%", delta_color="off",
-              help="Distinct agents that received at least one NewFeedback event")
-    f5.metric("Passes Sybil bar (≥3)", f"{int(funnel.n_passes_sybil_bar):,}",
+              help="Distinct agents that received at least one NewFeedback")
+    r2.metric("Rated AND claims x402", f"{rated_x402:,}",
+              delta=f"{rated_x402/n_reg*100:.2f}%", delta_color="off",
+              help="Inner join of Identity & Reputation, restricted to x402=true cards")
+    r3.metric("Passes Sybil bar (≥3)", f"{int(funnel.n_passes_sybil_bar):,}",
               delta=f"{funnel.n_passes_sybil_bar/n_reg*100:.2f}%", delta_color="off",
               help="unique_clients >= 3 — the gist filter")
-    f6.metric("Claims x402", f"{int(funnel.n_x402_claim):,}",
-              delta=f"{funnel.n_x402_claim/n_reg*100:.1f}%", delta_color="off",
-              help="Self-reported card field x402Support == true")
+    r4.metric("Received USDC", f"{n_usdc:,}",
+              delta=f"{n_usdc/n_reg*100:.3f}%", delta_color="off",
+              help=f"x402=true owners that ever received a USDC transfer (~${float(usdc.total_usdc_amount or 0):,.0f} total)")
 
     st.markdown(
-        f"**Headline:** {n_reg:,} registrations → only **{int(funnel.n_passes_sybil_bar)}** "
-        f"({funnel.n_passes_sybil_bar/n_reg*100:.2f}%) cleared the standard Sybil bar — "
-        f"and those still get exposed in Tab 4."
+        f"**Headline:** {n_reg:,} registrations claim, **{n_usdc}** "
+        f"({n_usdc/n_reg*100:.2f}%) ever received a real USDC payment. "
+        f"Each row narrows from claim to reality."
     )
 
     st.divider()
@@ -160,6 +176,30 @@ with tab2:
     )
 
     st.divider()
+
+    # ---- Drill-down on the #1 wallet ----
+    TOP_WALLET = "0xd5d6d96fa23455ec5e3c00633f85f364d3f5a291"
+    with st.expander(f"🔬 Drill-down: top wallet `{TOP_WALLET}` (9,967 agents)", expanded=True):
+        with st.spinner("Loading top-owner deep dive..."):
+            dd = run_query(q.q_owner_deep_dive(TOP_WALLET)).iloc[0]
+
+        d1, d2, d3, d4 = st.columns(4)
+        d1.metric("Agents", f"{int(dd.n_agents):,}")
+        d2.metric("Has any URI", f"{int(dd.n_agents - dd.n_no_uri):,}",
+                  delta=f"{(1 - dd.n_no_uri/dd.n_agents)*100:.0f}% of pool",
+                  delta_color="off")
+        d3.metric("Has on-chain card", f"{int(dd.n_has_card):,}")
+        d4.metric("Received feedback", f"{int(dd.n_rated_in_owner):,}",
+                  help="Distinct agents in this wallet's pool that got NewFeedback events")
+
+        st.error(
+            f"**This wallet registered {int(dd.n_agents):,} agents — and every single one "
+            f"has an empty agent_uri.** Zero on-chain cards, zero service endpoints, "
+            f"zero x402 claims, zero nftOrigin entries. Pure registration spam. "
+            f"Yet **{int(dd.n_rated_in_owner)} of those empty agents received reputation "
+            f"feedback** — somebody is rating shells. Registration window: "
+            f"{dd.first_registration:%Y-%m-%d} → {dd.last_registration:%Y-%m-%d}."
+        )
 
     # ---- Top owners ----
     col_a, col_b = st.columns([3, 2])
@@ -496,3 +536,98 @@ with tab4:
             "These wallets won't trip the unique_clients ≥ 3 bar by themselves, "
             "but their pattern is unmistakable."
         )
+
+
+# =============================================================================
+# Tab 5 — 📋 Cheat Sheet (every headline number on one screen)
+# =============================================================================
+with tab5:
+    st.header("📋 Cheat Sheet — everything on one page")
+    st.caption(
+        "Every number here is also derived from one of the queries powering Tabs 1-4. "
+        "Same cache, same denominators, same partition cut."
+    )
+
+    # All numbers come from already-cached queries — no extra BigQuery cost
+    with st.spinner("Loading…"):
+        funnel = run_query(q.q_funnel()).iloc[0]
+        rated_x402 = int(run_query(q.q_rated_x402_count()).iloc[0]["n_rated_x402"])
+        usdc = run_query(q.q_x402_claim_vs_reality()).iloc[0]
+        conc = run_query(q.q_owner_concentration()).iloc[0]
+        hosts = run_query(q.q_external_uri_hosts(5))
+        rep = run_query(q.q_reputation_summary()).iloc[0]
+        score_stats = run_query(q.q_score_distribution()).iloc[0]
+        rev = run_query(q.q_reviewer_count_distribution())
+
+    n_reg = int(funnel.n_registered)
+    n_one_reviewer = int(rev.loc[rev["bucket"] == "1_reviewer", "n_agents"].sum())
+    top_host = hosts.iloc[0]
+
+    st.subheader("Funnel — claim → reality")
+    c = st.columns(8)
+    stages = [
+        ("Registered", n_reg, None),
+        ("Has card", funnel.n_inline_json, "27.5%"),
+        ("Functional", funnel.n_functional, "0.65%"),
+        ("Claims x402", funnel.n_x402_claim, "13.4%"),
+        ("Has feedback", funnel.n_agents_rated, "4.8%"),
+        ("Rated AND x402", rated_x402, "0.62%"),
+        ("Sybil pass ≥3", funnel.n_passes_sybil_bar, "0.30%"),
+        ("Received USDC", usdc.n_owners_received_usdc, "0.09%"),
+    ]
+    for col, (label, v, share) in zip(c, stages):
+        col.metric(label, f"{int(v):,}", delta=share, delta_color="off")
+
+    st.divider()
+
+    st.subheader("Owner concentration")
+    o = st.columns(4)
+    o[0].metric("Distinct owners", f"{int(conc.n_owners):,}")
+    o[1].metric("Top 1 share",  f"{conc.top1 / n_reg * 100:.1f}%",
+                delta=f"{int(conc.top1):,}", delta_color="off")
+    o[2].metric("Top 10 share", f"{conc.top10 / n_reg * 100:.1f}%",
+                delta=f"{int(conc.top10):,}", delta_color="off")
+    o[3].metric("Top 20 share", f"{conc.top20 / n_reg * 100:.1f}%",
+                delta=f"{int(conc.top20):,}", delta_color="off")
+
+    st.subheader("Bot-farm hosts (top external URI domains)")
+    h = st.columns(min(5, len(hosts)))
+    for i, row in hosts.head(5).iterrows():
+        h[i].metric(
+            row["host"],
+            f"{int(row['n_registrations']):,}",
+            delta=f"{int(row['n_owners'])} owner(s)",
+            delta_color="off",
+            help="n_owners == 1 is the bot-farm fingerprint",
+        )
+
+    st.divider()
+
+    st.subheader("Reputation — what's real, what's wash")
+    rep_cols = st.columns(5)
+    rep_cols[0].metric("NewFeedback events", f"{int(rep.n_feedbacks):,}")
+    rep_cols[1].metric("Distinct URI hashes", f"{int(rep.n_distinct_uri_hashes):,}",
+                       delta=f"≈ {rep.n_feedbacks/rep.n_distinct_uri_hashes:.0f}× reuse",
+                       delta_color="off")
+    rep_cols[2].metric("1-reviewer agents", f"{n_one_reviewer:,}",
+                       delta=f"{n_one_reviewer/rep.n_agents_rated*100:.0f}% of rated",
+                       delta_color="off",
+                       help="The long tail the Sybil bar discards")
+    rep_cols[3].metric("Perfect-100 scores", f"{int(score_stats.n_perfect_100):,}",
+                       delta=f"{score_stats.n_perfect_100/score_stats.n*100:.0f}% of feedbacks",
+                       delta_color="off")
+    rep_cols[4].metric("USDC actually paid",
+                       f"${float(usdc.total_usdc_amount or 0):,.0f}",
+                       delta=f"to {int(usdc.n_owners_received_usdc):,} wallets",
+                       delta_color="off")
+
+    st.divider()
+
+    st.markdown(
+        "### The one-line pitch\n"
+        f"> *{n_reg:,} registrations. {int(funnel.n_passes_sybil_bar)} pass the Sybil bar "
+        f"({funnel.n_passes_sybil_bar/n_reg*100:.2f}%). "
+        f"{int(usdc.n_owners_received_usdc)} ever received a USDC payment "
+        f"({usdc.n_owners_received_usdc/n_reg*100:.3f}%). "
+        f"The top wallet alone registered {int(conc.top1):,} agents — every one of them empty.*"
+    )
