@@ -1,222 +1,201 @@
 # Demo video script
 
-Two cuts. The **90-second** version is the submission video. The **30-second**
-version is the booth walk-through — short enough to repeat ten times in
-front of judges without losing your voice.
+Three cuts. The **2-minute** version is the submission video. The
+**90-second** booth walk-through is a backup; the **30-second** booth
+pitch is what you say while a judge is still walking up.
 
-Both versions assume the dashboard is already open on tab 1 and the live URL
-is the Cloud Run deployment (`https://erc8004-reality-check-…-uc.a.run.app`).
+All cuts assume the dashboard is already open on the first tab and the
+live URL is the Cloud Run deployment
+(`https://erc8004-reality-check-…-uc.a.run.app`).
 
 ---
 
 ## 2-minute cut (ETHGlobal submission — required 2-4 min)
 
-This is the version that goes into the submission form's "Video Upload"
-slot. Times below assume the screen is mirroring the live Cloud Run
-deployment (`https://erc8004-reality-check-…-uc.a.run.app`).
+The framing for this cut is **"observatory, not scanner."** Existing
+ERC-8004 sites count registrations; this is the internal-analytics
+dashboard that opens the box. Detailed numbers live in the dashboard —
+the voice-over names what each tab is *for*.
 
-**[0:00 – 0:12]  Open on the brand row at the top of the page**
+**[0:00 – 0:18]  Open on the brand row at the top of the page**
 
-> "ERC-8004 is Ethereum's new on-chain identity, reputation, and payment
-> registry for AI agents. On mainnet it has **34,569 registrations**
-> today, and four scanners are already racing to count them. We built
-> something different: a dashboard that reads those registrations
-> straight from BigQuery and shows what's *actually* behind the number."
-
----
-
-**[0:12 – 0:30]  Tab 1 — The Real Numbers**
-
-> "Each line in this funnel is a *real subset* of the line above it.
-> Of the 34,569 registrations, only **9,520 carry an inline on-chain
-> card**. Only **4,645** of those claim x402 payment support. Only
-> **216** of those have ever received a feedback event. Only **six**
-> survive all three filters plus the gist Sybil bar. And finally —
-> **only two of those six wallets ever received a real USDC payment**.
-> Three hundred twenty thousand dollars total, but a 99.99 percent gap
-> between claim and reality."
-
-*(Land on the green success callout below the funnel.)*
+> "Hi, I'm Young — I'm a Data Scientist at American Express, and I built
+> this in the last day at ETHGlobal New York. There are already four
+> ERC-8004 scanners online. They all do one thing: count registrations
+> and show you a leaderboard. None of them open the box. This is
+> different — think of it as an analytics observatory for the agent
+> registry. The kind of internal dashboard a serious team would build to
+> *understand* what's actually been registered on chain, not just count
+> it."
 
 ---
 
-**[0:30 – 0:52]  Click "Who's Behind It"**
+**[0:18 – 0:34]  Tab 1 — The Real Numbers**
 
-> "The top wallet alone registered **9,967 agents** — 29 percent of the
-> whole registry. Every single one has an empty agent_uri. No card, no
-> service, no x402, no nftOrigin. The top three wallets together cover
-> over a third of the registry, and **none** of them have set an ENS
-> name."
-
-*(Open the top-wallet drill-down expander, point at the empty rows.)*
-
-> "External hosts tell the same story. `api.normies.art` —
-> **1,171 registrations, exactly one owner**. That's the bot-farm
-> fingerprint. `ag0.xyz` has 1,985 registrations but **438 distinct
-> owners** — a real platform, different shape."
+> "The first tab is the funnel. Other scanners stop at the top line —
+> 'thirty four thousand agents registered.' Here every step is a real
+> subset of the one above it, all the way down to the wallets that
+> actually received a USDC payment. The success bar at the bottom is
+> the chain confirming what the registry only claims."
 
 ---
 
-**[0:52 – 1:10]  Click "What Agents Actually Do"**
+**[0:34 – 0:54]  Click "Who's Behind It"**
 
-> "Inside the 9,520 cards: only **224 have a real service endpoint** —
-> two percent. **4,645 claim x402 payment support**, but when we
-> JOIN `token_transfers` to check, **only 32 owners ever received any
-> USDC**. The claim was set with one line of JSON; the reality
-> required on-chain settlement."
+> "The second tab answers: who registered all of this? You'll see the
+> Pareto on owners, the external hosts that are run by a single wallet
+> (those are bot farms), and a drill-down on the single biggest
+> registrant that breaks every category down side by side. The ENS
+> column right next to the address turns anonymous hex into real
+> identities wherever the owner has set one."
 
-*(Hover the x402 claim-vs-reality KPIs.)*
-
----
-
-**[1:10 – 1:30]  Click "Reputation, Real or Fake"**
-
-> "Even the 105 agents that pass the standard Sybil bar are not safe.
-> 3,173 feedback events share only **183 distinct feedbackURI hashes** —
-> seventeen times reuse on average. One hash, `0xc5d246…`, appears
-> **386 times from 301 different wallets** targeting just 39 agents.
-> That's a coordinated Sybil campaign disguised as 301 independent
-> voices — exactly what the standard filter cannot catch."
+*(Open the top-wallet drill-down briefly so the raw-counts table is on
+screen.)*
 
 ---
 
-**[1:30 – 1:50]  Click "Trustworthy + Payable"**
+**[0:54 – 1:14]  Click "What Agents Actually Do"**
 
-> "Here's the shortlist the GCP prize statement asks for. Sybil bar,
+> "Third tab opens the agent cards. You'll find what shape the
+> registrations actually take — empty entries, NFT wrappers, test spam,
+> functional agents with real endpoints — and the protocol mix inside
+> the cards: OASF, MCP, A2A, web. The headline measurement on this tab
+> is the x402 claim versus reality: it joins BigQuery's `token_transfers`
+> table to ask which of the agents that *say* they accept payment have
+> ever received anything."
+
+---
+
+**[1:14 – 1:34]  Click "Reputation, Real or Fake"**
+
+> "Fourth tab is reputation. The standard filter that every other
+> scanner uses is 'three or more unique reviewers.' You'll find that
+> filter here, but you'll also find what it misses — feedback URI hash
+> collisions that catch coordinated wash campaigns where one piece of
+> feedback was reused across hundreds of agents by hundreds of wallets.
+> The drill-down expanders surface the specific clients that only ever
+> hand out perfect scores."
+
+---
+
+**[1:34 – 1:54]  Click "Trustworthy + Payable"**
+
+> "Fifth tab is the answer. It intersects every filter — Sybil bar,
 > minimum reputation, x402 claim, and real on-chain USDC settlement —
-> the entire registry collapses to **six agents**. Two actually got
-> paid: **Surf, owned by `kevinlilili.eth`**, and **Ethy AI, owned by
-> `ethyagent.eth`**. Both are ENS-named wallets. The pattern is
-> impossible to miss: the registry's biggest farms are anonymous, the
-> real ones aren't."
+> and shows you the agents that survive. The ENS column on the left is
+> the credibility signal: the registry's largest anonymous registrants
+> have no ENS at all, while the agents that actually got paid are owned
+> by ENS-named wallets."
 
 *(Highlight the `owner_ens` column.)*
 
 ---
 
-**[1:50 – 2:05]  Click "Find Agents", type the example**
+**[1:54 – 2:14]  Click "Find Agents", type the example**
 
-> "And finally — natural-language search, powered by Vertex AI Gemini.
-> 'Agents with at least 5 reviews and high reputation.' Gemini parses
-> it into structured filters, BigQuery returns the result. No API key,
-> no secret file — the **same service account** that reads BigQuery
-> calls Gemini and resolves ENS."
+> "Sixth tab is search — both a free-text box powered by Vertex AI
+> Gemini, and the same filters exposed as widgets so you can drive the
+> search by hand. Watch — 'agents with at least 5 reviews and high
+> reputation.' Gemini parses the sentence into structured filters and
+> BigQuery returns the result. No API key, no secret file — the same
+> service account that reads BigQuery calls Gemini and resolves ENS."
 
 *(Press Enter, let the results render.)*
 
 ---
 
-**[2:05 – 2:15]  Close**
+**[2:14 – 2:25]  Close**
 
-> "BigQuery, Cloud Run, Vertex AI Gemini, ENS — all on one GCP service
-> account. Open source. Repo and live demo linked below."
+> "BigQuery for the data, Cloud Run for hosting, Vertex AI Gemini for
+> search, ENS for identity — all on one GCP service account. Open
+> source. Repo and live demo are linked below."
 
 ---
 
 ## 90-second cut (booth + backup)
 
-Read the times as "by this point you should be on this screen." Words in
-**bold** are the ones to land on; everything else is connective tissue.
+Same framing as the 2-minute cut, tighter. Use this if the submission
+upload fails or a judge asks for the short version.
 
-**[0:00 – 0:08]  Open on Tab 1 — "The Real Numbers"**
+**[0:00 – 0:12]  Open**
 
-> "ERC-8004 is Ethereum's new identity, reputation and payment registry
-> for AI agents. On mainnet it has **34,569 registrations** today. This
-> dashboard reads them straight from BigQuery and shows what's actually
-> behind that number."
-
-*(Briefly hover the top funnel row.)*
+> "I'm Young, a Data Scientist at AmEx. There are already four
+> ERC-8004 scanners online, and they all just count registrations. This
+> is the analytics observatory that opens the box — a real internal
+> dashboard for the agent registry, not a leaderboard."
 
 ---
 
-**[0:08 – 0:18]  Tab 1, the strict-subset funnel**
+**[0:12 – 0:22]  Tab 1 — Funnel**
 
-> "Each step here is a real subset of the previous one. Of those 34,569
-> registrations, only **9,520 carry an on-chain card**. Of those, only
-> **1,652 ever received a feedback event**. Only **105 pass the standard
-> Sybil filter** of at least three unique reviewers. And only **32
-> wallets ever received a real USDC payment** — **320 thousand dollars
-> total**. The 99 percent gap between claim and reality is the story."
+> "First tab is the funnel. Every step is a strict subset of the one
+> above it, all the way down to the wallets that actually received a
+> USDC payment. The chain confirming the claim."
 
 ---
 
-**[0:18 – 0:33]  Click "Who's Behind It"**
+**[0:22 – 0:35]  Tab 2 — Owners**
 
-> "The top wallet alone registered **9,967 agents** — 29 percent of the
-> entire registry. Every single one has an empty agent_uri. No card, no
-> service, no x402, no nftOrigin. The top three wallets together account
-> for over a third of the registry, and **none of them have set an ENS
-> name**."
-
-*(Open the top-wallet drill-down expander, point at the empty rows.)*
+> "Second tab: who registered all this. Owner Pareto, bot-farm hosts
+> (one wallet running many cards under one domain), and a drill-down
+> on the single biggest registrant. The ENS column right next to the
+> address turns anonymous wallets into real identities where the
+> owner has set one."
 
 ---
 
-**[0:33 – 0:48]  Click "What Agents Actually Do"**
+**[0:35 – 0:48]  Tab 3 — Agents**
 
-> "Inside the 9,520 cards: only **224 have a real service endpoint** —
-> that's two percent. **4,645 cards claim x402 payment support**, but
-> when we join `token_transfers`, only **32 owners** ever received
-> USDC. The claim was set with one line of JSON; the reality required
-> on-chain settlement."
-
-*(Hover the x402-claim-vs-reality KPIs.)*
+> "Third tab opens the agent cards. What shape are the registrations?
+> Empty, NFT wrapper, test spam, functional with a real endpoint —
+> all classified. The headline here is x402 claim versus reality:
+> a `token_transfers` JOIN that checks who actually accepts payment."
 
 ---
 
-**[0:48 – 1:03]  Click "Reputation, Real or Fake"**
+**[0:48 – 1:01]  Tab 4 — Reputation**
 
-> "Even the 105 agents that pass the Sybil bar are not safe. 3,173
-> feedback events share only **183 distinct feedbackURI hashes** —
-> seventeen times reuse on average. One hash, `0xc5d246…`, appears 386
-> times from **301 different wallets** targeting only 39 agents. That's
-> a coordinated Sybil campaign disguised as 301 independent voices."
-
----
-
-**[1:03 – 1:18]  Click "Trustworthy + Payable"**
-
-> "Here's the shortlist the prize statement asks for. We take the Sybil
-> bar, a minimum average score of 80, the x402 flag, and the
-> `token_transfers` USDC join — and the entire ERC-8004 registry
-> collapses to **six agents**. **kevinlilili.eth** runs the only one
-> that pulled in more than a thousand dollars."
-
-*(Highlight the `owner_ens` column.)*
+> "Fourth tab is reputation. The standard Sybil filter that every
+> other scanner uses is here, but you'll also find what it misses —
+> feedbackURI hash collisions that catch coordinated wash campaigns,
+> and a drill-down on clients that only ever hand out perfect scores."
 
 ---
 
-**[1:18 – 1:28]  Click "Find Agents", type the example**
+**[1:01 – 1:15]  Tab 5 — Trustworthy + Payable**
 
-> "And finally — natural-language search, powered by Vertex AI Gemini.
-> 'Agents with at least 5 reviews and high reputation.' Gemini parses
-> it into structured filters, BigQuery returns the result. No API key,
-> no secret file — the same service account that reads BigQuery calls
-> Gemini."
-
-*(Press Enter, let the results render.)*
+> "Fifth tab is the answer. Intersect every filter — Sybil bar, score,
+> x402 claim, real USDC — and the registry collapses to a handful of
+> agents. The ENS column shows the credibility signal: the largest
+> anonymous registrants have no ENS, the real ones do."
 
 ---
 
-**[1:28 – 1:30]  Close**
+**[1:15 – 1:25]  Tab 6 — Search**
 
-> "BigQuery, Cloud Run, Vertex AI, ENS. Open source. Repo and live demo
-> in the description."
+> "Sixth tab is search — free text powered by Vertex AI Gemini, same
+> service account as BigQuery and ENS. No API key, no secrets."
+
+---
+
+**[1:25 – 1:30]  Close**
+
+> "BigQuery, Cloud Run, Vertex AI Gemini, ENS. Open source. Repo and
+> live demo linked."
 
 ---
 
 ## 30-second booth cut
 
-For walking judges through the headline in one breath.
+For walking judges through the framing in one breath.
 
-> "ERC-8004 registry has **34,569 agents on mainnet**. Only **32
-> wallets** ever received a real USDC payment — that's the claim-vs-
-> reality gap. The top wallet registered **9,967 empty agents**, all
-> anonymous. After filtering for trust, reputation, x402, and real
-> USDC settlement, the entire registry collapses to **six agents** —
-> the two that actually got paid are both owned by ENS-named wallets.
-> Built on BigQuery, Cloud Run, Vertex AI, and ENS reverse resolution.
-> Open source, live demo linked."
+> "I'm Young, Data Scientist at AmEx. The existing ERC-8004 scanners
+> count registrations and stop. This is an analytics observatory —
+> the internal dashboard that opens the box. Six tabs that walk you
+> from who registered, to what they actually are, to which ones got
+> paid, to a Gemini-powered natural-language search. Same service
+> account does BigQuery, Cloud Run, Vertex AI, and ENS — no API key
+> anywhere. Open source, live demo linked."
 
 ---
 
