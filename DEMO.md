@@ -17,104 +17,122 @@ ERC-8004 sites count registrations; this is the internal-analytics
 dashboard that opens the box. Detailed numbers live in the dashboard —
 the voice-over names what each tab is *for*.
 
-**[0:00 – 0:22]  Open on the brand row at the top of the page**
+**[0:00 – 0:22]  Open on the dashboard's first screen (brand row + Tab 1)**
 
-> "Hi, I'm Young — I've been working on data science at American
-> Express, and I built ERC 8004 Reality Check to deep-dive into the
-> ERC-8004 usage. 8004 Reality Check opens the box. This is the first
-> line of analytics dashboard created from Google's Web3 ERC-8004
-> dataset. It provides not only top-line numbers and a leaderboard,
-> but also in-depth analytics that highlight how ERC-8004 is actually
-> being used."
-
----
-
-**[0:22 – 0:32]  Tab 1 — The Real Numbers**
-
-> "The first tab is the funnel. Other scanners stop at the top line —
-> 'thirty-four thousand agents registered.'"
-
-*(Land on the funnel row so the viewer sees the strict chain narrow
-left-to-right, ending on the success callout.)*
+> "Hi, I'm Young — I work on data science at American Express, and I
+> built 8004 Reality Check. ERC-8004 is the new agent registry on
+> Ethereum, and a few explorers already index it — but they all stop
+> at the top-line number: thirty-four thousand agents registered.
+> This is the first analytics dashboard built on Google's Web3
+> ERC-8004 dataset that opens the box. Not just leaderboards —
+> in-depth analytics on how ERC-8004 is actually used."
 
 ---
 
-**[0:32 – 0:52]  Click "Who's Behind It"**
+**[0:22 – 0:42]  Tab 1 — The Real Numbers funnel**
 
-> "The second tab answers: who registered all of this? You'll see the
-> Pareto distribution on owners, the external hosts that are run by a
-> single wallet. The ENS column right next to the address turns
-> anonymous hex into real identities wherever the owner has set one."
+> "The first tab is the funnel. Everyone reports 34,569
+> registrations. Watch what happens as we add reality. Of those,
+> 9,520 carry an actual on-chain card. Only 224 expose a real
+> service endpoint. 105 pass a three-reviewer trust bar. And just
+> six are simultaneously trustworthy and payable."
 
-*(Open the top-wallet drill-down briefly so the raw-counts table is on
-screen.)*
-
----
-
-**[0:52 – 1:07]  Click "What Agents Actually Do"**
-
-> "Third tab opens the agent cards. You'll find what shape the
-> registrations actually take — empty entries, NFT wrappers, test
-> spam, functional agents with real endpoints."
+*(Sweep across the funnel row left-to-right; land on the success
+callout below it.)*
 
 ---
 
-**[1:07 – 1:30]  Click "Reputation, Real or Fake"**
+**[0:42 – 1:02]  Click "Who's Behind It"**
 
-> "Fourth tab is reputation. The standard filter that every other
-> scanner uses is 'three or more unique reviewers.' You'll find that
-> filter here, but you'll also find what it misses — feedback URI
-> hash collisions that catch coordinated wash campaigns where one
-> piece of feedback was reused across hundreds of agents by hundreds
-> of wallets. The drill-down expanders surface the specific clients
-> that only ever hand out perfect scores."
+> "So who registered all of this? We dig into the owners. Here's the
+> Pareto. One single wallet registered 9,967 agents — almost
+> twenty-nine percent of the entire registry — every one with empty
+> metadata. The top twenty wallets account for fifty-five percent.
+> You can see external hosts run by a single wallet — bot-farm
+> fingerprints. And the ENS column, right next to each address,
+> turns anonymous hex into real identities wherever the owner has
+> set one."
 
----
-
-**[1:30 – 1:50]  Click "Trustworthy + Payable"**
-
-> "Fifth tab is the answer. It intersects every filter — Sybil bar,
-> minimum reputation, x402 claim, and real on-chain USDC settlement —
-> and shows you the agents that survive. The ENS column on the left
-> is the credibility signal: the registry's largest anonymous
-> registrants have no ENS at all, while the agents that actually got
-> paid are owned by ENS-named wallets."
-
-*(Highlight the `owner_ens` column.)*
+*(Open the top-wallet drill-down expander so the all-empty raw-counts
+table is visible while you say "every one with empty metadata.")*
 
 ---
 
-**[1:50 – 2:10]  Click "Find Agents", type the example**
+**[1:02 – 1:22]  Click "What Agents Actually Do"**
 
-> "Sixth tab is search — both a free-text box powered by Vertex AI
-> Gemini, and the same filters exposed as widgets so you can drive
-> the search by hand. Watch — 'agents with at least 5 reviews and
-> high reputation.' Gemini parses the sentence into structured
-> filters and BigQuery returns the result. No API key, no secret
-> file — the same service account that reads BigQuery calls Gemini
-> and resolves ENS."
+> "The third tab opens the agent cards — what the registrations
+> actually are. Empty entries, NFT wrappers, test spam, and the
+> genuine functional agents with real endpoints. We parse every
+> on-chain base64 card inside BigQuery, then classify them. We also
+> test the x402 claim against reality: 4,645 agents claim x402
+> payment support — but only 32 owners ever received USDC on
+> Ethereum mainnet, totaling about three hundred and twenty thousand
+> dollars. Claim… versus settlement."
 
-*(Press Enter, let the results render.)*
+*(Hover the x402-claim-vs-reality KPIs while saying "claim versus
+settlement.")*
 
 ---
 
-**[2:10 – 2:22]  Closing insight — mainnet vs L2**
+**[1:22 – 1:44]  Click "Reputation, Real or Fake"**
+
+> "Fourth tab — reputation. Every other scanner's filter is 'three
+> or more unique reviewers.' It's here too — but so is what it
+> misses. FeedbackURI hash collisions. Over three thousand feedback
+> events share only 183 distinct hashes. One single piece of
+> feedback was reused across 39 agents by 301 wallets — a
+> coordinated wash campaign that sails right through the
+> three-reviewer bar. The drill-downs surface the clients that only
+> ever hand out perfect hundreds."
+
+*(Scroll to the Q4b feedbackURI-collision table and rest on the
+`0xc5d246…` row while you say "39 agents by 301 wallets.")*
+
+---
+
+**[1:44 – 2:02]  Click "Trustworthy + Payable"**
+
+> "The fifth tab is the answer. It intersects everything — the Sybil
+> bar, minimum reputation, the x402 claim, and real USDC settlement —
+> and shows the agents that survive. And the ENS column tells the
+> story: the registry's largest anonymous registrants have no ENS at
+> all, while the agents that actually got paid — Surf, Ethy AI, Jeff
+> Zyfai — are owned by ENS-named wallets. ENS as a credibility
+> signal."
+
+*(Point at the `owner_ens` column when you read the three names.)*
+
+---
+
+**[2:02 – 2:17]  Click "Find Agents", type the example**
+
+> "The sixth tab is search — powered by Vertex AI Gemini. Watch:
+> 'agents with at least five reviews and high reputation.' Gemini
+> parses that sentence into structured filters, and BigQuery returns
+> the result."
+
+*(Type the sentence at human pace, press Enter, let the results
+render.)*
+
+---
+
+**[2:17 – 2:29]  Closing insight — mainnet vs L2**
 
 > "One thing worth flagging: this is Ethereum mainnet. x402 is
-> Base-native, and a lot of these cards advertise multi-chain support.
-> So mainnet is likely where agents plant their flag, while L2s — Base
-> especially — are where they actually work. Extending this same
+> Base-native, and a lot of these cards advertise multi-chain
+> support. So mainnet is where agents plant their flag — Base and
+> other L2s are where they actually work. Extending this same
 > pipeline there is the natural next step."
 
 ---
 
-**[2:22 – 2:35]  Stack close**
+**[2:29 – 2:42]  Stack close (back on the first screen, or on architecture)**
 
-> "Under the hood, it's BigQuery for the data, Cloud Run for the app,
-> Vertex AI Gemini for natural-language search, and ENS for identity
-> resolution — all running through one GCP service account. No API
-> keys, no secret files. It's open source, and the repo and live demo
-> are linked below."
+> "Under the hood: BigQuery for the data, Cloud Run for the app,
+> Vertex AI Gemini for search, ENS for identity — all through one
+> GCP service account. No API keys, no secret files. It's open
+> source. The repo and live demo are linked below. Thanks for
+> watching."
 
 ---
 
