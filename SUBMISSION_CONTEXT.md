@@ -30,6 +30,7 @@ split) via owner reverse-resolution.
 | Claims x402 support | 4,645 | `x402Support` or `x402support` = true |
 | Rated AND claims x402 | 216 | inner-join Identity decoded × Reputation |
 | Trustworthy + Payable shortlist | 6 | Sybil ≥ 3 + avg_score ≥ 80 + x402 = true |
+| **Of those, owner actually received USDC** | **2** | Surf ($1,594.91), Ethy AI ($13.45) — the chain's true final stage |
 | Has any feedback | 1,652 | Distinct agent_id in NewFeedback events |
 | Passes Sybil bar (≥ 3 reviewers) | 105 | `HAVING COUNT(DISTINCT client) >= 3` |
 | Owner received USDC | 32 | `token_transfers` JOIN restricted to USDC + x402 owners |
@@ -257,8 +258,9 @@ introductions.
   seventeen times reuse on average. One hash appears 386 times from
   301 different wallets targeting only 39 agents."*
 - *"After every filter, the entire registry collapses to six agents.
-  The two that actually got paid are owned by ENS-named wallets:
-  kevinlilili.eth and ethyagent.eth."*
+  Only two of those owners ever received a USDC transfer — Surf
+  ($1,594.91) and Ethy AI ($13.45). Both are owned by ENS-named
+  wallets: kevinlilili.eth and ethyagent.eth."*
 - *"BigQuery, Cloud Run, Vertex AI, ENS. One service account does all
   the auth — no API key anywhere."*
 
